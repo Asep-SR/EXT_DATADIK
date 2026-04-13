@@ -1,6 +1,6 @@
 # 🚀 Datadik Ciamis Scraper Pro
 
-**Datadik Ciamis Scraper Pro** adalah ekstensi Google Chrome yang dirancang untuk mengotomatisasi pengambilan data individu guru dari portal resmi Datadik Kemendikdasmen. Ekstensi ini dikembangkan untuk mendukung efisiensi pengolahan data pada **Satgas Percepatan MBG Kabupaten Ciamis**.
+**Datadik Ciamis Scraper Pro** adalah ekstensi Google Chrome yang dirancang untuk mengotomatisasi pengambilan data individu guru dari portal resmi Datadik Kemendikdasmen. Ekstensi ini dikembangkan untuk mendukung efisiensi pengolahan data di Dinas Pendidikan Kabupaten Ciamis.
 
 Ekstensi ini menyuntikkan tombol kustom langsung ke dalam UI portal Datadik, memungkinkan pengguna untuk mengunduh data dari seluruh kecamatan di Kabupaten Ciamis menjadi satu file Excel secara otomatis.
 
