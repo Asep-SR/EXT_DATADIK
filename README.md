@@ -45,4 +45,4 @@ Pastikan struktur repositori Anda terlihat seperti ini:
 ## ⚠️ Disclaimer
 Ekstensi ini dibuat khusus untuk mempermudah tugas administratif di lingkungan Kabupaten Ciamis. Penggunaan ekstensi ini harus mematuhi kebijakan privasi dan keamanan data yang berlaku di Kemendikdasmen. Pengembang tidak bertanggung jawab atas penyalahgunaan data hasil scraping.
 
-## 📍 Dikembangkan untuk Dinas Pendidikan Kabupaten Ciamis
+📍 Dikembangkan untuk Dinas Pendidikan Kabupaten Ciamis
