@@ -1,0 +1,25 @@
+#scraper-modal-overlay {
+    position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.scraper-modal-content {
+    background: white; padding: 25px; border-radius: 12px; width: 450px; 
+    max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.scraper-modal-content h4 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+.progress-item { 
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px;
+}
+.badge-status { 
+    padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; min-width: 60px; text-align: center;
+}
+.pending { background: #f0f0f0; color: #888; }
+.loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.success { background: #d4edda; color: #155724; }
+.error { background: #f8d7da; color: #721c24; }
+.btn-close-scraper {
+    margin-top: 20px; width: 100%; padding: 10px; background: #dc3545; 
+    color: white; border: none; border-radius: 6px; cursor: pointer;
+}

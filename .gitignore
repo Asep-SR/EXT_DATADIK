@@ -1,0 +1,4 @@
+# .gitignore
+*.xlsx
+*.csv
+.DS_Store
