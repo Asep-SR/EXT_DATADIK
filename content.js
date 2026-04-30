@@ -20,7 +20,7 @@ function injectButton() {
         scraperBtn.innerHTML = '<i class="icon-cloud-download"></i> Download Semua Kecamatan';
         
         originalBtn.parentNode.appendChild(scraperBtn);
-        scraperBtn.addEventListener('click', runBulkScraper);
+        scraperBtn.addEventListener('click', showConfirmationModal);
     }
 }
 
@@ -29,18 +29,115 @@ function getProcessingText(index) {
     return `Memproses${dots[index % 3]}`;
 }
 
-async function runBulkScraper() {
+// Menampilkan modal konfirmasi Bootstrap 3
+function showConfirmationModal() {
     const selectKec = document.getElementById('kec');
     const options = Array.from(selectKec.options).filter(opt => opt.value !== "");
-    
+
     if (options.length === 0) {
-        alert("Pilih kabupaten terlebih dahulu agar daftar kecamatan muncul.");
+        showBootstrapAlert("Peringatan", "Pilih kabupaten terlebih dahulu agar daftar kecamatan muncul.", "warning");
         return;
     }
 
-    if (!confirm(`Apakah Anda ingin mendownload data dari ${options.length} kecamatan?`)) return;
+    // Bersihkan backdrop sebelumnya untuk mencegah layar unclickable
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 
-    isScrapingCancelled = false; 
+    let confirmModal = document.getElementById('confirmScraperModal');
+    if (!confirmModal) {
+        confirmModal = document.createElement('div');
+        confirmModal.id = 'confirmScraperModal';
+        confirmModal.className = 'modal fade';
+        confirmModal.setAttribute('tabindex', '-1');
+        confirmModal.setAttribute('role', 'dialog');
+        confirmModal.style.zIndex = '1050';
+        
+        confirmModal.innerHTML = `
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Konfirmasi Download</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Apakah Anda ingin mendownload data dari <strong id="modal-kec-count">0</strong> kecamatan?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="btn-confirm-yes">Ya, Lanjutkan</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(confirmModal);
+    }
+
+    document.getElementById('modal-kec-count').innerText = options.length;
+
+    document.getElementById('btn-confirm-yes').onclick = function() {
+        if (typeof $ !== 'undefined' && $('#confirmScraperModal').modal) {
+            $('#confirmScraperModal').modal('hide');
+        } else {
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+            confirmModal.classList.remove('in');
+            confirmModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+        
+        runBulkScraper();
+    };
+
+    if (typeof $ !== 'undefined' && $('#confirmScraperModal').modal) {
+        $('#confirmScraperModal').modal('show');
+    } else {
+        confirmModal.classList.add('in');
+        confirmModal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade in';
+        document.body.appendChild(backdrop);
+        
+        confirmModal.querySelector('.close').onclick = function() {
+            backdrop.remove();
+            confirmModal.classList.remove('in');
+            confirmModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        };
+    }
+}
+
+function showBootstrapAlert(title, message, type = 'info') {
+    let alertDiv = document.getElementById('bootstrapScraperAlert');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'bootstrapScraperAlert';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        document.body.appendChild(alertDiv);
+    }
+
+    alertDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible" role="alert" style="box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <strong>${title}</strong><br>${message}
+        </div>
+    `;
+
+    setTimeout(() => {
+        if (alertDiv) {
+            alertDiv.innerHTML = '';
+        }
+    }, 6000);
+}
+
+async function runBulkScraper() {
+    const selectKec = document.getElementById('kec');
+    const options = Array.from(selectKec.options).filter(opt => opt.value !== "");
+
+    isScrapCancelled = false; 
     
     const oldModal = document.getElementById('scraper-modal-overlay');
     if (oldModal) oldModal.remove();
@@ -48,14 +145,11 @@ async function runBulkScraper() {
     const modal = createModal(options);
     document.body.appendChild(modal);
 
-    const btnCancel = document.getElementById('btn-cancel-scraper');
-    if (btnCancel) btnCancel.addEventListener('click', cancelScraping);
-
     let finalData = [];
     const total = options.length;
 
     for (let i = 0; i < total; i++) {
-        if (isScrapingCancelled) {
+        if (isScrapCancelled) {
             updateGlobalProgress('Dibatalkan', 'custom-progress-danger', null);
             break; 
         }
@@ -74,7 +168,6 @@ async function runBulkScraper() {
             if (Array.isArray(data)) {
                 dataRows = data;
             } else if (data && typeof data === 'object') {
-                // Menangani data object, seperti data.sppg
                 let dataSource = data.sppg ? data.sppg : data;
                 dataRows = Array.isArray(dataSource) ? dataSource : Object.values(dataSource);
             }
@@ -99,7 +192,7 @@ async function runBulkScraper() {
         await new Promise(r => setTimeout(r, 400));
     }
 
-    if (isScrapingCancelled) return; 
+    if (isScrapCancelled) return; 
 
     updateGlobalProgress('100% - Menyusun Excel...', 'custom-progress-animated', 100);
 
@@ -111,11 +204,11 @@ async function runBulkScraper() {
         const fileName = `Data_Guru_Kab_Ciamis_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`;
         XLSX.writeFile(workbook, fileName);
         
-        alert("Scraping Selesai! File Excel telah diunduh.");
+        showBootstrapAlert("Berhasil", "Scraping Selesai! File Excel telah diunduh.", "success");
         updateGlobalProgress('Selesai!', 'custom-progress-success', 100);
         setTimeout(() => closeScraperModal(), 3000);
     } else {
-        alert("Tidak ada data yang berhasil ditarik.");
+        showBootstrapAlert("Informasi", "Tidak ada data yang berhasil ditarik.", "info");
         updateGlobalProgress('Selesai (Tanpa Data)', 'custom-progress-danger', 100);
     }
 }
@@ -147,6 +240,15 @@ function createModal(options) {
             <button id="btn-cancel-scraper" class="btn-close-scraper">Batalkan & Tutup</button>
         </div>
     `;
+
+    // Pastikan listener untuk tombol cancel terpasang saat elemen dibuat
+    setTimeout(() => {
+        const btnCancel = overlay.querySelector('#btn-cancel-scraper');
+        if (btnCancel) {
+            btnCancel.addEventListener('click', cancelScraping);
+        }
+    }, 100);
+
     return overlay;
 }
 
@@ -171,8 +273,16 @@ function updateGlobalProgress(text, stateClass, percent = null) {
 }
 
 function cancelScraping() {
-    isScrapingCancelled = true;
+    isScrapCancelled = true;
     updateGlobalProgress('Membatalkan...', 'custom-progress-danger', null);
+    
+    // Hapus backdrop atau elemen modal apabila ada sisa-sisa di DOM
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+        backdrop.remove();
+    }
+    document.body.classList.remove('modal-open');
+
     setTimeout(() => {
         closeScraperModal();
     }, 800);
