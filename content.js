@@ -1,3 +1,6 @@
+const RETRY_LIMIT = 3;
+const RETRY_DELAY = 1500;
+
 const columns = [
     "Nama", "NIK", "NUPTK", "NIP", "L/P", "Tempat Lahir", "Tanggal Lahir",
     "Status Tugas", "Tempat Tugas", "NPSN", "Kecamatan", "Kabupaten/Kota",
@@ -160,33 +163,110 @@ async function runBulkScraper() {
         const percent = Math.round((i / total) * 100);
         updateGlobalProgress(`${percent}% - ${getProcessingText(i)}`, 'custom-progress-animated', percent);
         
-        try {
-            const response = await fetch(`https://datadik.kemendikdasmen.go.id/ma74/xindividuguru/${opt.value}`);
-            const data = await response.json();
+        let success = false;
 
-            let dataRows = [];
-            if (Array.isArray(data)) {
-                dataRows = data;
-            } else if (data && typeof data === 'object') {
-                let dataSource = data.sppg ? data.sppg : data;
-                dataRows = Array.isArray(dataSource) ? dataSource : Object.values(dataSource);
-            }
+        for (let attempt = 1; attempt <= RETRY_LIMIT; attempt++) {
 
-            if (dataRows.length > 0) {
-                dataRows.forEach(row => {
-                    let entry = {};
-                    columns.forEach((colName, index) => {
-                        entry[colName] = (row[index] === null || row[index] === undefined) ? "" : row[index];
+            if (isScrapCancelled) break;
+
+            try {
+
+                updateUIStatus(
+                    opt.value,
+                    'loading',
+                    `Retry ${attempt}/${RETRY_LIMIT}...`
+                );
+
+                const response = await fetch(
+                    `https://datadik.kemendikdasmen.go.id/ma74/xindividuguru/${opt.value}`,
+                    {
+                        method: 'GET',
+                        credentials: 'include',
+                        cache: 'no-cache'
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                let dataRows = [];
+
+                if (Array.isArray(data)) {
+                    dataRows = data;
+                } else if (data && typeof data === 'object') {
+                    let dataSource = data.sppg ? data.sppg : data;
+                    dataRows = Array.isArray(dataSource)
+                        ? dataSource
+                        : Object.values(dataSource);
+                }
+
+                if (dataRows.length > 0) {
+
+                    dataRows.forEach(row => {
+                        let entry = {};
+
+                        columns.forEach((colName, index) => {
+                            entry[colName] =
+                                (row[index] === null || row[index] === undefined)
+                                    ? ""
+                                    : row[index];
+                        });
+
+                        finalData.push(entry);
                     });
-                    finalData.push(entry);
-                });
-                updateUIStatus(opt.value, 'success', `${dataRows.length} Data`);
-            } else {
-                updateUIStatus(opt.value, 'error', 'Kosong');
+
+                    updateUIStatus(
+                        opt.value,
+                        'success',
+                        `${dataRows.length} Data`
+                    );
+
+                    success = true;
+                    break;
+
+                } else {
+
+                    updateUIStatus(
+                        opt.value,
+                        'error',
+                        'Kosong'
+                    );
+
+                    success = true;
+                    break;
+                }
+
+            } catch (err) {
+
+                console.error(
+                    `Retry ${attempt} gagal untuk ${opt.value}`,
+                    err
+                );
+
+                if (attempt < RETRY_LIMIT) {
+
+                    updateUIStatus(
+                        opt.value,
+                        'loading',
+                        `Retry ${attempt}/${RETRY_LIMIT}`
+                    );
+
+                    await new Promise(r =>
+                        setTimeout(r, RETRY_DELAY)
+                    );
+
+                } else {
+
+                    updateUIStatus(
+                        opt.value,
+                        'error',
+                        `Gagal (${RETRY_LIMIT}x)`
+                    );
+                }
             }
-        } catch (err) {
-            console.error(`Error ID ${opt.value}:`, err);
-            updateUIStatus(opt.value, 'error', 'Gagal');
         }
 
         await new Promise(r => setTimeout(r, 400));
